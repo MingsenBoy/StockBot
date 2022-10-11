@@ -20,7 +20,7 @@ line_bot_api = LineBotApi(
 # 必須放上自己的Channel Secret
 handler = WebhookHandler('188aea8ff2896544e83136e56e2756c4')
 
-line_bot_api.push_message('U066c7cf935fa7a185f301ca749aecc64', TextSendMessage(text = '請輸入欲查詢股票資料 格式為 股票 (股名)'))
+line_bot_api.push_message('U066c7cf935fa7a185f301ca749aecc64', TextSendMessage(text = '請輸入欲查詢股票資料       格式為 股票 (股名)'))
 
 
 # 監聽所有來自 /callback 的 Post Request
