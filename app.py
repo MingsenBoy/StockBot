@@ -75,8 +75,8 @@ def handle_message(event):
     )
         line_bot_api.reply_message(event.reply_token, buttons_template_message)
     else:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage("請參照正確格式"))
-        line_bot_api.reply_message(event.reply_token, TextSendMessage("請輸入欲查詢股票資料/格式為---股票-股名"))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage("請參照正確格式" + "請輸入欲查詢股票資料/格式為---股票-股名"))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(""))
 
 
 
