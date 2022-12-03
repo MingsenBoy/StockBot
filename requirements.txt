@@ -1,0 +1,6 @@
+Flask
+requests
+beautifulsoup4
+DateTime
+line-bot-sdk
+Gunicorn
