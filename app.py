@@ -14,6 +14,7 @@ import re
 #*********function*****************
 from stock_news import *
 import test
+from stock import *
 
 #*********function*****************
 
@@ -27,7 +28,13 @@ line_bot_api = LineBotApi(
 handler = WebhookHandler('188aea8ff2896544e83136e56e2756c4')
 
 line_bot_api.push_message('U066c7cf935fa7a185f301ca749aecc64', TextSendMessage(text = 
-'請輸入欲查詢資訊'))
+f"""[操作教學]
+    P+個股代號：當日個股行情
+    F+個股代號：基本面資訊
+    T+個股代號：外資買賣超
+    新聞：即時新聞清單
+    股票股名:個股資訊或個股新聞
+    大盤：當日大盤行情"""))
 #請輸入欲查詢股票資料\n格式為---股票 股名
 
 # 監聽所有來自 /callback 的 Post Request
@@ -74,6 +81,10 @@ def handle_message(event):
                     MessageAction(
                         label= message[3:] + " 個股新聞",
                         text= "個股新聞 " + message[3:]
+                    ),
+                    MessageAction(
+                        label= message[3:] + " 個股新聞",
+                        text= "個股新聞 " + message[3:]
                     )
                 ]
                 )
@@ -97,6 +108,19 @@ def handle_message(event):
         )
         line_bot_api.reply_message(event.reply_token, flex_message)
 
+    # elif "股票 " in message:
+    #     stock_mes = stock_message(message[3:])
+    #     line_bot_api.reply_message(event.reply_token,stock_mes)
+    elif "個股資訊 " in message:
+        stock_n = stock_id(message[5:])
+        cont = continue_after(message[5:])
+        line_bot_api.reply_message(event.reply_token,[TextSendMessage(stock_n),cont])
+
+    elif "個股新聞 " in message:
+        new_one = one_new(message[5:])
+        cont = continue_after(message[5:])
+        line_bot_api.reply_message(event.reply_token,[new_one,cont])
+
     elif re.match("新聞",message):
         news = stock_new()
         line_bot_api.reply_message(event.reply_token,news)
@@ -119,10 +143,10 @@ def handle_message(event):
     elif "F" in message:
         message = message.replace("F", "")
         line_bot_api.reply_message(event.reply_token, TextSendMessage(test.fundamental(message)))
-    # 即時新聞
-    elif "新聞" in message:
-        result = test.news_crawler()
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result))
+    # # 即時新聞
+    # elif "新聞" in message:
+    #     result = test.news_crawler()
+    #     line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result))
     # 當日大盤
     elif "大盤" in message:
         result = test.stock_index()
@@ -131,10 +155,11 @@ def handle_message(event):
     elif "T" in message:
         message = message.replace("T", "")
         line_bot_api.reply_message(event.reply_token, TextSendMessage(test.institution(message)))
-    elif "help" in message:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(test.help()))
+    # elif "help" in message:
+    #     line_bot_api.reply_message(event.reply_token, TextSendMessage(test.help()))
     else:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage("輸入help 參照格式"))
+        #line_bot_api.reply_message(event.reply_token, TextSendMessage("輸入help可參照輸入格式"))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(test.help()))
 
 
 
