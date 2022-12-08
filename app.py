@@ -11,6 +11,12 @@ from linebot.models import *
 
 import re 
 
+#*********function*****************
+from stock_news import *
+import test
+
+#*********function*****************
+
 app = Flask(__name__)
 
 # 必須放上自己的Channel Access Token
@@ -20,8 +26,9 @@ line_bot_api = LineBotApi(
 # 必須放上自己的Channel Secret
 handler = WebhookHandler('188aea8ff2896544e83136e56e2756c4')
 
-line_bot_api.push_message('U066c7cf935fa7a185f301ca749aecc64', TextSendMessage(text = '請輸入欲查詢股票資料\n格式為---股票-股名'))
-
+line_bot_api.push_message('U066c7cf935fa7a185f301ca749aecc64', TextSendMessage(text = 
+'請輸入欲查詢資訊'))
+#請輸入欲查詢股票資料\n格式為---股票 股名
 
 # 監聽所有來自 /callback 的 Post Request
 @app.route("/callback", methods=['POST'])
@@ -56,7 +63,7 @@ def handle_message(event):
         template = CarouselTemplate(
             columns = [
                 CarouselColumn(
-                thumbnail_image_url = r"D:\NSYSU_CU\111-1\Fintech\picture\template_pic.png",
+                #thumbnail_image_url = r"D:\NSYSU_CU\111-1\Fintech\picture\template_pic.png",
                 title = message + "股票資訊",
                 text = "請點選想查詢的股票資訊",
                 actions = [
@@ -74,9 +81,60 @@ def handle_message(event):
         )
     )
         line_bot_api.reply_message(event.reply_token, buttons_template_message)
+
+    elif '大戶籌碼 ' in message:
+        flex_message = TextSendMessage(text="請選擇要顯示的買賣超資訊",
+                                       quick_reply=QuickReply(
+                                        items=[
+                                            QuickReplyButton(action=MessageAction(label="最新法人", text="最新法人買賣超 " + message[5:])),
+                                            QuickReplyButton(action=MessageAction(label="歷年法人", text="歷年法人買賣超 " + message[5:])),
+                                            QuickReplyButton(action=MessageAction(label="外資", text="外資買賣超 " + message[5:])),
+                                            QuickReplyButton(action=MessageAction(label="投信", text="投信買賣超 " + message[5:])),
+                                            QuickReplyButton(action=MessageAction(label="自營商", text="自營商買賣超 " + message[5:])),
+                                            QuickReplyButton(action=MessageAction(label="三大法人", text="三大法人買賣超 " + message[5:]))
+                                        ]
+                                       )  
+        )
+        line_bot_api.reply_message(event.reply_token, flex_message)
+
+    elif re.match("新聞",message):
+        news = stock_new()
+        line_bot_api.reply_message(event.reply_token,news)
+    elif re.match("頭條新聞",message):
+        news = headlines()
+        line_bot_api.reply_message(event.reply_token,news)
+    elif re.match("台股新聞",message):
+        news = tw_stock()
+        line_bot_api.reply_message(event.reply_token,news)
+    elif re.match("國際新聞",message):
+        news = wd_stock()
+        line_bot_api.reply_message(event.reply_token,news)
+
+
+    # In[]
+    elif "P" in message:
+        message = message.replace("P", "")
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(test.price(message)))
+    # 基本面分析
+    elif "F" in message:
+        message = message.replace("F", "")
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(test.fundamental(message)))
+    # 即時新聞
+    elif "新聞" in message:
+        result = test.news_crawler()
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result))
+    # 當日大盤
+    elif "大盤" in message:
+        result = test.stock_index()
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result))
+    # 外資買賣超
+    elif "T" in message:
+        message = message.replace("T", "")
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(test.institution(message)))
+    elif "help" in message:
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(test.help()))
     else:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage("請參照正確格式\n" + "格式為---股票-股名"))
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(""))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage("輸入help 參照格式"))
 
 
 
@@ -91,5 +149,5 @@ def handle_message(event):
 #主程式
 import os
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 7000))
     app.run(host='0.0.0.0', port=port)
