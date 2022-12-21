@@ -83,11 +83,29 @@ def handle_message(event):
                         text= "個股新聞 " + message[3:]
                     ),
                     MessageAction(
-                        label= message[3:] + " 個股新聞",
-                        text= "個股新聞 " + message[3:]
+                        label= message[3:] + " 基本面資訊",
+                        text= "基本面資訊 " + message[3:]
                     )
                 ]
-                )
+                ),
+                CarouselColumn(
+                #thumbnail_image_url ="https://chenchenhouse.com//wp-content/uploads/2020/10/%E5%9C%96%E7%89%871-2.png",
+                title = message[3:] + " 股票資訊",
+                text ="請點選想查詢的股票資訊",
+                actions =[
+                    MessageAction(
+                        label= message[3:] + " 外資買賣超",
+                        text= "外資買賣超 " + message[3:]
+                    ),
+                    MessageAction(
+                        label= message[3:] + " 最新分鐘圖",
+                        text= "最新分鐘圖 " + message[3:]
+                    ),
+                    MessageAction(
+                        label= message[3:] + " 日線圖",
+                        text= "日線圖 " + message[3:]),
+                ]
+                ),
             ]
         )
     )
@@ -120,6 +138,28 @@ def handle_message(event):
         new_one = one_new(message[5:])
         cont = continue_after(message[5:])
         line_bot_api.reply_message(event.reply_token,[new_one,cont])
+
+    elif "基本面資訊 " in message:
+        fundamental = fundamental_(message[6:])
+        cont = continue_after(message[6:])
+        line_bot_api.reply_message(event.reply_token,[TextSendMessage(fundamental),cont])
+        #line_bot_api.reply_message(event.reply_token, TextSendMessage(test.fundamental(message)))
+
+    elif "外資買賣超 " in message:
+        institution = institution_(message[6:])
+        cont = continue_after(message[6:])
+        line_bot_api.reply_message(event.reply_token,[TextSendMessage(institution),cont])
+        #line_bot_api.reply_message(event.reply_token, TextSendMessage(test.fundamental(message)))
+
+    elif "最新分鐘圖 " in message:
+        m = min_close(message[6:])
+        cont = continue_after(message[6:])
+        line_bot_api.reply_message(event.reply_token,[m,cont])
+
+    elif "日線圖 " in message:
+        d = stock_day(message[4:])
+        cont = continue_after(message[4:])
+        line_bot_api.reply_message(event.reply_token,[d,cont])
 
     elif re.match("新聞",message):
         news = stock_new()
@@ -163,13 +203,7 @@ def handle_message(event):
 
 
 
-# @handler.add(MessageEvent, message=TextMessage) 
-# def handle_message(event):
-# 　　message = event.message.text
-# 　　if re.match("你是誰",message):
-# 　　　　line_bot_api.reply_message(event.reply_token,TextSendMessage("才不告訴你勒~~"))
-# 　　else:
-# 　　　　line_bot_api.reply_message(event.reply_token,TextSendMessage(message))
+
 
 #主程式
 import os

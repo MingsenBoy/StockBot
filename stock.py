@@ -10,8 +10,11 @@ import talib
 import json
 from random import choice
 import time
+from datetime import date
+from datetime import timedelta
 import arrow
 import numpy as np
+import inspect
 
 #股票名稱換代號
 def stock_change(message):
@@ -32,6 +35,7 @@ def stock_change(message):
         return(message)
     except:
         return("請輸入正確的股票名稱")
+        #return(message)
 
 
 #個股資訊
@@ -56,6 +60,56 @@ def stock_id(message):
         return mes
     except:
         return("請輸入正確的股票代號")
+
+
+def message_split(message):
+    message = message[6:]
+    return message
+
+
+# 爬蟲基本面資訊
+def fundamental_(message):
+    sto_number = stock_change(message)
+    
+    try:
+        response = requests.get(
+            url=f"http://www.twse.com.tw/exchangeReport/BWIBBU?response=json&stockNo={sto_number}").json()
+        data = response['data'][-1]
+        result = inspect.cleandoc(f"""日期：{data[0]}
+                                    殖利率(%)：{data[1]}
+                                    股利年度：{data[2]}
+                                    本益比：{data[3]}
+                                    股價淨值比：{data[4]}
+                                    財報年/季：{data[5]}""")
+        return result
+    except:
+        return("請輸入正確的股票代號")
+
+
+# 爬蟲法人買賣超
+def institution_(message):
+    sto_number = stock_change(message)
+
+    day = date.today()
+    if day.weekday() == 5:
+        day -= timedelta(days=1)
+    elif day.weekday() == 6:
+        day -= timedelta(days=2)
+
+    url = "https://api.finmindtrade.com/api/v3/data"
+    parameter = {
+        "dataset": "InstitutionalInvestorsBuySell",
+        "stock_id": sto_number,
+        "date": day,
+    }
+    response = requests.get(url, params=parameter)
+    response = response.json()
+    data = response['data'][-2]
+    result = inspect.cleandoc(f"""日期：{day}
+                                外資買進(股)：{data["buy"]:,}
+                                外資賣出(股)：{data["sell"]:,}
+                                外資買賣超(股)：{(data["buy"] - data["sell"]):,}""")
+    return result
 
 
 #個股新聞
@@ -387,6 +441,157 @@ def one_new(message):
     )
     return message
 
+#分鐘圖
+def min_close(message):
+    if not re.match(r"[+-]?\d+$", message):
+        message = stock_change(message)
+    url = "https://tw.stock.yahoo.com/_td-stock/api/resource/FinanceChartService.ApacLibraCharts;autoRefresh=1631105443818;symbols=%5B%22" + str(message) +".TW%22%5D;type=tick?bkt=tw-qsp-exp-no4&device=desktop&ecma=modern&feature=ecmaModern%2CuseVersionSwitch%2CuseNewQuoteTabColor%2ChideMarketInfo&intl=tw&lang=zh-Hant-TW&partner=none&prid=3j6j761gjhcda&region=TW&site=finance&tz=Asia%2FTaipei&ver=1.2.1132&returnMeta=true"
+    res = requests.get(url)
+    jd = res.json()["data"][0]["chart"]["indicators"]["quote"][0]
+    open_ = jd["open"]
+    high = jd["high"]
+    low = jd["low"]
+    close = jd["close"]
+    volume = jd["volume"]
+    time = res.json()["data"][0]["chart"]["timestamp"]
+    df = pd.DataFrame({"timestamp" :  time , "open" : open_ , "high" : high , "low" : low , "close" : close , "volume" : volume})
+    time_ = pd.to_datetime(df["timestamp"] + 3600 * 8 , unit = "s")
+    df["timestamp"] = time_
+    df = df.fillna(method= "ffill")
+    df = df[1:]
+    jd_ = res.json()["data"][0]["chart"]["meta"]
+    previousClose = jd_["previousClose"]
+    close1 = []   #上漲
+    close2 = []   #下跌
+    for i in range(len(df)):
+        if df["close"].values[i] >=  previousClose:
+            close1.append(df["close"].values[i])
+        else:
+            close1.append(previousClose)
+    for i in range(len(df)):
+        if df["close"].values[i] <=  previousClose:
+            close2.append(df["close"].values[i])
+        else:
+            close2.append(previousClose)
+    df["close1"] = close1
+    df["close2"] = close2
+    df["Previous"] = previousClose
+    url_ = "https://isin.twse.com.tw/isin/class_main.jsp?owncode=&stockname=&isincode=&market=1&issuetype=1&industry_code=&Page=1&chklike=Y"
+    df_ = pd.read_html(requests.get(url_).text)[0]
+    df_ = df_.iloc[:,2:7]
+    df_.columns = df_.iloc[0,:]
+    df_ = df_[1:]
+    url2 = "https://isin.twse.com.tw/isin/class_main.jsp?owncode=&stockname=&isincode=&market=2&issuetype=4&industry_code=&Page=1&chklike=Y"
+    df_2 = pd.read_html(requests.get(url2).text)[0]
+    df_2 = df_2.iloc[:,2:7]
+    df_2.columns = df_2.iloc[0,:]
+    df_2 = df_2[1:]
+    df_3 = pd.concat([df_,df_2])
+    df_4 = df_3[df_3["有價證券代號"] == message]
+    title = df_4.values[0,0] + " " + df_4.values[0,1]
+    plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei'] 
+    plt.rcParams['axes.unicode_minus'] = False
+    plt.subplots(figsize=(15, 5)) 
+    plt.title(title,fontsize = 15)
+    plt.xlabel('時段',fontsize = 15)
+    plt.ylabel('股價',fontsize = 15)
+    plt.grid()
+    plt.plot(df["timestamp"],df["close1"],"r")
+    plt.plot(df["timestamp"],df["close2"],"g")
+    plt.plot(df["timestamp"],df["Previous"],"yellow")
+    plt.fill_between(df["timestamp"],df["close1"], df["Previous"], color = 'lightcoral')
+    plt.fill_between(df["timestamp"],df["close2"], df["Previous"], color = 'palegreen')
+    plt.savefig(str(message) + "分鐘圖.png", bbox_inches = "tight")
+    CLIENT_ID = "0214ca80ccacfe5"
+    PATH = str(message) + "分鐘圖.png" #A Filepath to an image on your computer"
+    title = str(message) + "分鐘圖"
+    im = pyimgur.Imgur(CLIENT_ID)
+    uploaded_image = im.upload_image(PATH, title=title)
+    image_message = ImageSendMessage( 
+        original_content_url= uploaded_image.link,
+        preview_image_url= uploaded_image.link)
+    return image_message
+
+#歷史股價資料
+def stock_l(message):
+    start = int(time.mktime(time.strptime(arrow.now().shift(months = 1).strftime("%Y-%m-%d"),"%Y-%m-%d")))
+    end = int(time.mktime(time.strptime(arrow.now().shift(months = -3).strftime("%Y-%m-%d"),"%Y-%m-%d")))
+    url = "https://ws.api.cnyes.com/ws/api/v1/charting/history?resolution=D&symbol=TWS:"+ message +":STOCK&from=" +str(start) + "&to="+str(end) + "&quote=1"
+    res = requests.get(url)
+    s = json.loads(res.text)
+    t = []
+    o = []
+    h = []
+    l = []
+    c = []
+    v = []
+    name = [t,o,h,l,c,v]
+    lis = ["t","o","h","l","c","v"]
+    for n,lis in zip(name,lis):
+        for d in (s["data"][lis]):
+            n.append(d)
+    df = pd.DataFrame({"日期":t,"開盤價":o,"最高價":h,"最低價":l,"收盤價":c,"成交量":v})    
+    for i in range(len(df)):
+        df["日期"][i] = time.strftime("%Y-%m-%d", time.localtime(df["日期"][i]))
+    df.index = pd.to_datetime(df["日期"])
+    df.index = df.index.format(formatter=lambda x: x.strftime('%Y-%m-%d')) 
+    df.drop("日期",axis = 1,inplace=True)
+    df = df.sort_index()
+    return df
+
+#日線圖
+def stock_day(message):
+    if not re.match(r"[+-]?\d+$", message):
+        message = stock_change(message)
+    df = stock_l(message)
+    url_ = "https://isin.twse.com.tw/isin/class_main.jsp?owncode=&stockname=&isincode=&market=1&issuetype=1&industry_code=&Page=1&chklike=Y"
+    df_ = pd.read_html(requests.get(url_).text)[0]
+    df_ = df_.iloc[:,2:7]
+    df_.columns = df_.iloc[0,:]
+    df_ = df_[1:]
+    url2 = "https://isin.twse.com.tw/isin/class_main.jsp?owncode=&stockname=&isincode=&market=2&issuetype=4&industry_code=&Page=1&chklike=Y"
+    df_2 = pd.read_html(requests.get(url2).text)[0]
+    df_2 = df_2.iloc[:,2:7]
+    df_2.columns = df_2.iloc[0,:]
+    df_2 = df_2[1:]
+    df_3 = pd.concat([df_,df_2])
+    df_4 = df_3[df_3["有價證券代號"] == message]
+    title_ = df_4.values[0,0] + " " + df_4.values[0,1]
+    sma_10 = talib.SMA(np.array(df['最低價']), 10)
+    sma_20 = talib.SMA(np.array(df['最低價']), 20)
+    fig = plt.figure(figsize=(24, 15))
+    ax = fig.add_axes([0,0.2,1,0.5])
+    ax2 = fig.add_axes([0,0,1,0.2])
+    ax.set_xticks(range(0, len(df.index),10))
+    ax.set_title(title_,fontsize=30)
+    ax.yaxis.set_tick_params(labelsize=15)
+    ax.grid(True)
+    ax.set_xticklabels(df.index[::10])
+    mpf.candlestick2_ochl(ax, df['開盤價'], df['收盤價'], df['最高價'],
+                        df['最低價'], width=0.6, colorup='r', colordown='g', alpha=0.75); 
+    plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei'] 
+    plt.rcParams['axes.unicode_minus'] = False
+    ax.plot(sma_10, label='10日均線')
+    ax.plot(sma_20, label='20日均線')
+    mpf.volume_overlay(ax2, df['開盤價'], df['收盤價'], df['成交量'], colorup='r', colordown='g', width=0.5, alpha=0.8)
+    ax2.grid(True)
+    ax2.set_xticks(range(0, len(df.index), 10))
+    ax2.set_xticklabels(df.index[::10])
+    plt.xticks(rotation=45,fontsize=20)
+    plt.yticks(fontsize=15)
+    ax.legend(fontsize=20,loc = "upper left")
+    plt.savefig(str(message) + "日線圖.png", bbox_inches = "tight") 
+    CLIENT_ID = "0214ca80ccacfe5"
+    PATH = str(message) + "日線圖.png" #A Filepath to an image on your computer"
+    title = str(message) + "日線圖"
+    im = pyimgur.Imgur(CLIENT_ID)
+    uploaded_image = im.upload_image(PATH, title=title)
+    image_message = ImageSendMessage( 
+        original_content_url= uploaded_image.link,
+        preview_image_url= uploaded_image.link)
+    return image_message
+
+
 def continue_after(message):
     if re.match(r"[+-]?\d+$", message):
         try:
@@ -415,7 +620,7 @@ def continue_after(message):
                 text="股票 " + message 
             ),
             MessageAction( 
-                label="不用了", 
+                label="退出", 
                 text="退出" 
             ) 
         ]    
