@@ -626,3 +626,110 @@ def continue_after(message):
         ]    
     ) )
     return(confirm_template_message)
+
+#平均股利1
+def contiun_dividend(message):
+    if not re.match(r"[+-]?\d+$", message):
+        message = stock_change(message)
+    url = "https://tw.stock.yahoo.com/quote/" + str(message) + "/dividend"
+    headers = {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
+    }
+    res = requests.get(url,headers= headers)
+    while str(res) != "<Response [200]>":
+        res = requests.get(url,headers= headers)
+    soup = BeautifulSoup(res.text,"html.parser")
+    soup1 = soup.find("p",{"class":"Mb(20px) Mb(12px)--mobile Fz(16px) Fz(18px)--mobile C($c-primary-text)"}).text
+    return soup1
+
+#平均股利2
+def average_dividend(message):
+    if not re.match(r"[+-]?\d+$", message):
+        message = stock_change(message)
+    url = "https://goodinfo.tw/StockInfo/StockDividendPolicy.asp?STOCK_ID=" + str(message)
+    headers = {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
+    }
+    res = requests.get(url,headers=headers )
+    res.encoding = "utf-8"
+    soup = BeautifulSoup(res.text,"html.parser")
+    soup1 = soup.find_all("tr",{"align":"center","bgcolor":"white"})
+    title = ["類別","平均股利(元)","平均增減(元)","均填權息日數","平均殖利率(%)","連續分派年數"]
+    content = pd.DataFrame()
+    for i in range(4,7):
+            soup2 = soup1[i].find_all("td")
+            content = content.append([[soup2[0].text,soup2[1].text,soup2[2].text,soup2[3].text,soup2[4].text,soup2[7].text]])
+    content.columns = title
+    content.index = content["類別"]
+    content.drop("類別",axis=1,inplace = True)
+    plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei'] 
+    plt.rcParams['axes.unicode_minus'] = False
+    plt.figure('平均股利')            # 視窗名稱
+    plt.figure(dpi = 500)
+    ax = plt.axes(frame_on=False)# 不要額外框線
+    ax.xaxis.set_visible(False)  # 隱藏X軸刻度線
+    ax.yaxis.set_visible(False)  # 隱藏Y軸刻度線
+    pd.plotting.table(ax, content, loc='center')
+    plt.savefig(str(message) + "平均股利.png", bbox_inches = "tight")
+    CLIENT_ID = "50086aa149e4219"
+    PATH = str(message) + "平均股利.png" #A Filepath to an image on your computer"
+    title = str(message) + "平均股利"
+    im = pyimgur.Imgur(CLIENT_ID)
+    uploaded_image = im.upload_image(PATH, title=title)
+    image_message = ImageSendMessage( 
+        original_content_url= uploaded_image.link,
+        preview_image_url= uploaded_image.link)
+    return image_message
+
+#歷年股利
+def year_dividend(message):
+    if not re.match(r"[+-]?\d+$", message):
+        message = stock_change(message)
+    url = "https://tw.stock.yahoo.com/quote/" + str(message) + "/dividend"
+    headers = {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
+    }
+    res = requests.get(url,headers= headers)
+    while str(res) != "<Response [200]>":
+        res = requests.get(url,headers= headers)
+    soup = BeautifulSoup(res.text,"html.parser")
+    soup_period = soup.find_all("div",{"class" :"D(f) W(98px) Ta(start)"})[1:]
+    period = []
+    for i in soup_period:
+        period.append(i.text)
+    soup_dividend = soup.find_all("div",{"class":"Fxg(1) Fxs(1) Fxb(0%) Ta(end) Mend($m-table-cell-space) Mend(0):lc Miw(68px)"})[3:]
+    cash_dividend = []
+    stock_dividend = []
+    Interest_days = []
+    for i in range(0,len(soup_dividend),3):
+        cash_dividend.append(soup_dividend[i].text)
+        stock_dividend.append(soup_dividend[i+1].text)
+        Interest_days.append(soup_dividend[i+2].text)
+    soup_date = soup.find_all("div",{"class":"Fxg(1) Fxs(1) Fxb(0%) Ta(end) Mend($m-table-cell-space) Mend(0):lc Miw(108px)"})[2:]
+    Ex_dividend_date = []
+    Dividend_payment_date = []
+    for i in range(0,len(soup_date),2):
+        Ex_dividend_date.append(soup_date[i].text)
+        Dividend_payment_date.append(soup_date[i+1].text)
+    df = pd.DataFrame({"股利所屬期間":period,"現金股利":cash_dividend,"股票股利":stock_dividend,"填息天數":Interest_days,
+                       "除權息日":Ex_dividend_date,"股利發放日":Dividend_payment_date})
+    df.index = df["股利所屬期間"]
+    df.drop("股利所屬期間",axis = 1,inplace=True)
+    plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei'] 
+    plt.rcParams['axes.unicode_minus'] = False
+    plt.figure('歷年股利')            # 視窗名稱
+    plt.figure(dpi = 500)
+    ax = plt.axes(frame_on=False)# 不要額外框線
+    ax.xaxis.set_visible(False)  # 隱藏X軸刻度線
+    ax.yaxis.set_visible(False)  # 隱藏Y軸刻度線
+    pd.plotting.table(ax, df, loc='center')
+    plt.savefig(str(message) + "歷年股利.png", bbox_inches = "tight")
+    CLIENT_ID = "50086aa149e4219"
+    PATH = str(message) + "歷年股利.png" #A Filepath to an image on your computer"
+    title = str(message) + "歷年股利"
+    im = pyimgur.Imgur(CLIENT_ID)
+    uploaded_image = im.upload_image(PATH, title=title)
+    image_message = ImageSendMessage( 
+        original_content_url= uploaded_image.link,
+        preview_image_url= uploaded_image.link)
+    return image_message

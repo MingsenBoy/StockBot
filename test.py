@@ -75,8 +75,6 @@ def institution(stock):
 # 操作教學
 def help():
     result = inspect.cleandoc(f"""[操作教學]
-                                P+個股代號：當日個股行情
-                                F+個股代號：基本面資訊
                                 T+個股代號：外資買賣超
                                 新聞：即時新聞清單
                                 股票股名:股票資訊

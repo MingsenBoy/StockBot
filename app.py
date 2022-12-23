@@ -106,6 +106,25 @@ def handle_message(event):
                         text= "日線圖 " + message[3:]),
                 ]
                 ),
+                CarouselColumn(
+                #thumbnail_image_url = r"D:\NSYSU_CU\111-1\Fintech\picture\template_pic.png",
+                title = message + "股利資訊",
+                text = "請點選想查詢的股票資訊",
+                actions = [
+                    MessageAction(
+                        label = message[3:] + " 平均股利",
+                        text= "平均股利 " + message[3:]
+                    ),
+                    MessageAction(
+                        label= message[3:] + " 歷年股利",
+                        text= "歷年股利 " + message[3:]
+                    ),
+                    MessageAction(
+                        label= message[3:] + " 基本面資訊",
+                        text= "基本面資訊 " + message[3:]
+                    )
+                ]
+                ),
             ]
         )
     )
@@ -160,6 +179,17 @@ def handle_message(event):
         d = stock_day(message[4:])
         cont = continue_after(message[4:])
         line_bot_api.reply_message(event.reply_token,[d,cont])
+
+    elif "平均股利 " in message:
+        contiun = contiun_dividend(message[5:])
+        dividend_one = average_dividend(message[5:])
+        cont = continue_after(message[5:])
+        line_bot_api.reply_message(event.reply_token,[TextSendMessage(contiun),dividend_one,cont])
+            
+    elif "歷年股利 " in message:
+        dividend_year = year_dividend(message[5:])
+        cont = continue_after(message[5:])
+        line_bot_api.reply_message(event.reply_token,[dividend_year,cont]) 
 
     elif re.match("新聞",message):
         news = stock_new()
