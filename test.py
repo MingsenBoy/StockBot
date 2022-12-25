@@ -74,9 +74,7 @@ def institution(stock):
 
 # 操作教學
 def help():
-    result = inspect.cleandoc(f"""[操作教學]
-                                T+個股代號：外資買賣超
-                                新聞：即時新聞清單
-                                股票股名:股票資訊
-                                大盤：當日大盤行情""")
+    result = inspect.cleandoc(f"""[請使用關鍵字]
+                            大盤：當日大盤行情
+                            股票 股票名稱：進入個股資訊面板(ex. 股票 台積電)""")
     return result

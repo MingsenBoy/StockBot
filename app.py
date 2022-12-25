@@ -28,13 +28,9 @@ line_bot_api = LineBotApi(
 handler = WebhookHandler('188aea8ff2896544e83136e56e2756c4')
 
 line_bot_api.push_message('U066c7cf935fa7a185f301ca749aecc64', TextSendMessage(text = 
-f"""[操作教學]
-    P+個股代號：當日個股行情
-    F+個股代號：基本面資訊
-    T+個股代號：外資買賣超
-    新聞：即時新聞清單
-    股票股名:個股資訊或個股新聞
-    大盤：當日大盤行情"""))
+f"""[請使用關鍵字]
+    大盤：當日大盤行情
+    股票 股票名稱：進入個股資訊面板(ex. 股票 台積電)"""))
 #請輸入欲查詢股票資料\n格式為---股票 股名
 
 # 監聽所有來自 /callback 的 Post Request
@@ -120,8 +116,8 @@ def handle_message(event):
                         text= "歷年股利 " + message[3:]
                     ),
                     MessageAction(
-                        label= message[3:] + " 基本面資訊",
-                        text= "基本面資訊 " + message[3:]
+                        label= "退出",
+                        text=  "退出"
                     )
                 ]
                 ),
@@ -206,13 +202,13 @@ def handle_message(event):
 
 
     # In[]
-    elif "P" in message:
-        message = message.replace("P", "")
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(test.price(message)))
+    # elif "P" in message:
+    #     message = message.replace("P", "")
+    #     line_bot_api.reply_message(event.reply_token, TextSendMessage(test.price(message)))
     # 基本面分析
-    elif "F" in message:
-        message = message.replace("F", "")
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(test.fundamental(message)))
+    # elif "F" in message:
+    #     message = message.replace("F", "")
+    #     line_bot_api.reply_message(event.reply_token, TextSendMessage(test.fundamental(message)))
     # # 即時新聞
     # elif "新聞" in message:
     #     result = test.news_crawler()
@@ -222,11 +218,14 @@ def handle_message(event):
         result = test.stock_index()
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result))
     # 外資買賣超
-    elif "T" in message:
-        message = message.replace("T", "")
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(test.institution(message)))
+    # elif "T" in message:
+    #     message = message.replace("T", "")
+    #     line_bot_api.reply_message(event.reply_token, TextSendMessage(test.institution(message)))
     # elif "help" in message:
     #     line_bot_api.reply_message(event.reply_token, TextSendMessage(test.help()))
+
+    elif re.match("退出",message):
+        line_bot_api.reply_message(event.reply_token, TextSendMessage("感謝您的使用~"))
     else:
         #line_bot_api.reply_message(event.reply_token, TextSendMessage("輸入help可參照輸入格式"))
         line_bot_api.reply_message(event.reply_token, TextSendMessage(test.help()))

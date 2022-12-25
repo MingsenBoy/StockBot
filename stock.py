@@ -92,9 +92,11 @@ def institution_(message):
 
     day = date.today()
     if day.weekday() == 5:
-        day -= timedelta(days=1)
-    elif day.weekday() == 6:
         day -= timedelta(days=2)
+    elif day.weekday() == 6:
+        day -= timedelta(days=3)
+    else:
+        day -= timedelta(days=1)
 
     url = "https://api.finmindtrade.com/api/v3/data"
     parameter = {
