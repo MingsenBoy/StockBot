@@ -19,5 +19,5 @@
 - 股市新聞TOP10
 - 創立關注股票列表
 - 個股資訊、新聞、平均股利、歷年股利、獲利能力、同業比較、大戶籌碼
-- 個股分鐘圖、日線圖
-![Proposed Methodology](./figure/Stockbot.png)
+- 個股分鐘圖、日線圖  
+![Proposed Methodology](./figure/Stockbot.jpg)
